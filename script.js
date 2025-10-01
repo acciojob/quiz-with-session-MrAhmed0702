@@ -67,7 +67,7 @@ function renderQuestions() {
 
       // Restore saved selection
       if (savedAnswers[qIndex] === choice) {
-        input.checked = true;
+        input.setAttribute("checked", "true");
       }
 
       // Save selection when changed
