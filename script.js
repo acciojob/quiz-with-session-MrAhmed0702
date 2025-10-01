@@ -1,94 +1,121 @@
-// ----------------- STATE HELPERS -----------------
-function getProgress() {
-  return JSON.parse(sessionStorage.getItem("progress")) || {};
+// Define the quiz questions
+const questions = [
+  {
+    question: "What is the capital of France?",
+    choices: ["Paris", "London", "Berlin", "Madrid"],
+    answer: "Paris",
+  },
+  {
+    question: "What is the highest mountain in the world?",
+    choices: ["Everest", "Kilimanjaro", "Denali", "Matterhorn"],
+    answer: "Everest",
+  },
+  {
+    question: "What is the largest country by area?",
+    choices: ["Russia", "China", "Canada", "United States"],
+    answer: "Russia",
+  },
+  {
+    question: "Which is the largest planet in our solar system?",
+    choices: ["Earth", "Jupiter", "Mars", "Saturn"],
+    answer: "Jupiter",
+  },
+  {
+    question: "What is the capital of Canada?",
+    choices: ["Toronto", "Montreal", "Vancouver", "Ottawa"],
+    answer: "Ottawa",
+  },
+];
+
+// DOM elements
+const questionsElement = document.getElementById("questions");
+const submitButton = document.getElementById("submit");
+const scoreElement = document.getElementById("score");
+
+// --- SESSION STORAGE UTILS ---
+
+function getSavedAnswers() {
+  const saved = sessionStorage.getItem("progress");
+  return saved ? JSON.parse(saved) : {};
 }
 
-function saveProgress(progress) {
+function saveAnswer(index, choice) {
+  const progress = getSavedAnswers();
+  progress[index] = choice;
   sessionStorage.setItem("progress", JSON.stringify(progress));
 }
 
-function saveScore(score) {
+// --- RENDER QUESTIONS TO PAGE ---
+
+function renderQuestions() {
+  const savedAnswers = getSavedAnswers();
+
+  questions.forEach((question, qIndex) => {
+    const questionDiv = document.createElement("div");
+
+    const questionText = document.createElement("p");
+    questionText.textContent = question.question;
+    questionDiv.appendChild(questionText);
+
+    question.choices.forEach(choice => {
+      const label = document.createElement("label");
+
+      const input = document.createElement("input");
+      input.type = "radio";
+      input.name = `question-${qIndex}`;
+      input.value = choice;
+
+      // Restore saved selection
+      if (savedAnswers[qIndex] === choice) {
+        input.checked = true;
+      }
+
+      // Save selection when changed
+      input.addEventListener("change", () => {
+        saveAnswer(qIndex, choice);
+      });
+
+      label.appendChild(input);
+      label.appendChild(document.createTextNode(choice));
+      questionDiv.appendChild(label);
+    });
+
+    questionsElement.appendChild(questionDiv);
+  });
+}
+
+// --- CALCULATE SCORE ---
+
+function calculateScore() {
+  const answers = getSavedAnswers();
+  let score = 0;
+
+  questions.forEach((q, i) => {
+    if (answers[i] === q.answer) {
+      score++;
+    }
+  });
+
+  // Show and store score
+  const scoreText = `Your score is ${score} out of ${questions.length}.`;
+  scoreElement.textContent = scoreText;
   localStorage.setItem("score", score);
 }
 
-// ----------------- RENDER QUESTIONS -----------------
-const questionsElement = document.getElementById("questions");
-const scoreElement = document.getElementById("score");
-const submitBtn = document.getElementById("submit");
+// --- DISPLAY SAVED SCORE IF EXISTS ---
 
-// Load saved progress if available
-const userAnswers = getProgress();
-
-function renderQuestions() {
-  questionsElement.innerHTML = "";
-
-  for (let i = 0; i < questions.length; i++) {
-    const question = questions[i];
-
-    const questionElement = document.createElement("div");
-
-    const qText = document.createElement("p");
-    qText.textContent = question.question;
-    questionElement.appendChild(qText);
-
-    // Render options
-    for (let j = 0; j < question.choices.length; j++) {
-      const choice = question.choices[j];
-
-      const choiceElement = document.createElement("input");
-      choiceElement.type = "radio";
-      choiceElement.name = `question-${i}`;
-      choiceElement.value = choice;
-
-      // restore saved answer
-      if (userAnswers[i] === choice) {
-        choiceElement.checked = true;
-      }
-
-      // Save answer on selection
-      choiceElement.addEventListener("change", () => {
-        userAnswers[i] = choice;
-        saveProgress(userAnswers);
-      });
-
-      const label = document.createElement("label");
-      label.textContent = choice;
-
-      questionElement.appendChild(choiceElement);
-      questionElement.appendChild(label);
-      questionElement.appendChild(document.createElement("br"));
-    }
-
-    questionsElement.appendChild(questionElement);
+function displaySavedScore() {
+  const stored = localStorage.getItem("score");
+  if (stored !== null) {
+    scoreElement.textContent = `Your score is ${stored} out of ${questions.length}.`;
   }
 }
 
-// ----------------- CALCULATE SCORE -----------------
-function calculateScore() {
-  let score = 0;
-  for (let i = 0; i < questions.length; i++) {
-    if (userAnswers[i] === questions[i].answer) {
-      score++;
-    }
-  }
-  return score;
-}
+// --- EVENT LISTENERS ---
 
-// ----------------- HANDLE SUBMIT -----------------
-submitBtn.addEventListener("click", () => {
-  const score = calculateScore();
-  scoreElement.textContent = `Your score is ${score} out of ${questions.length}.`;
+submitButton.addEventListener("click", calculateScore);
 
-  saveScore(score); // persist in localStorage
-});
+// --- INIT ---
 
-// ----------------- RESTORE LAST SCORE -----------------
-window.addEventListener("load", () => {
-  const lastScore = localStorage.getItem("score");
-  if (lastScore !== null) {
-    scoreElement.textContent = `Your score is ${lastScore} out of ${questions.length}.`;
-  }
-});
-
-// ----------------- INITIAL RENDER -----------------
 renderQuestions();
+displaySavedScore();
