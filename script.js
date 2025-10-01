@@ -1,4 +1,15 @@
-// Define the quiz questions
+//your JS code here.
+function getProgress(){
+	return JSON.parse(sessionStorage.getItem("progress")) || {};
+}
+
+function saveProgress(obj){
+	sessionStorage.setItem("progress", JSON.stringify(obj));
+}
+
+const questionsElement = document.getElementById('questions');
+const userAnswers = getProgress();
+
 const questions = [
   {
     question: "What is the capital of France?",
@@ -27,95 +38,58 @@ const questions = [
   },
 ];
 
-// DOM elements
-const questionsElement = document.getElementById("questions");
-const submitButton = document.getElementById("submit");
-const scoreElement = document.getElementById("score");
-
-// --- SESSION STORAGE UTILS ---
-
-function getSavedAnswers() {
-  const saved = sessionStorage.getItem("progress");
-  return saved ? JSON.parse(saved) : {};
-}
-
-function saveAnswer(index, choice) {
-  const progress = getSavedAnswers();
-  progress[index] = choice;
-  sessionStorage.setItem("progress", JSON.stringify(progress));
-}
-
-// --- RENDER QUESTIONS TO PAGE ---
-
+// Display the quiz questions and choices
 function renderQuestions() {
-  const savedAnswers = getSavedAnswers();
+  for (let i = 0; i < questions.length; i++) {
+    const question = questions[i];
+    const questionElement = document.createElement("div");
+    const questionText = document.createTextNode(question.question);
+    questionElement.appendChild(questionText);
+	  
+    for (let j = 0; j < question.choices.length; j++) {
+      const choice = question.choices[j];
+      const choiceElement = document.createElement("input");
+      choiceElement.setAttribute("type", "radio");
+      choiceElement.setAttribute("name", `question-${i}`);
+      choiceElement.setAttribute("value", choice);
 
-  questions.forEach((question, qIndex) => {
-    const questionDiv = document.createElement("div");
-
-    const questionText = document.createElement("p");
-    questionText.textContent = question.question;
-    questionDiv.appendChild(questionText);
-
-    question.choices.forEach(choice => {
-      const label = document.createElement("label");
-
-      const input = document.createElement("input");
-      input.type = "radio";
-      input.name = `question-${qIndex}`;
-      input.value = choice;
-
-      // Restore saved selection
-      if (savedAnswers[qIndex] === choice) {
-        input.setAttribute("checked", "true");
+	  choiceElement.addEventListener("change", () => {
+		  userAnswers[i] = choice;
+		  saveProgress(userAnswers);
+	  });
+		
+      if (userAnswers[i] === choice) {
+        choiceElement.setAttribute("checked", true);
       }
-
-      // Save selection when changed
-      input.addEventListener("change", () => {
-        saveAnswer(qIndex, choice);
-      });
-
-      label.appendChild(input);
-      label.appendChild(document.createTextNode(choice));
-      questionDiv.appendChild(label);
-    });
-
-    questionsElement.appendChild(questionDiv);
-  });
-}
-
-// --- CALCULATE SCORE ---
-
-function calculateScore() {
-  const answers = getSavedAnswers();
-  let score = 0;
-
-  questions.forEach((q, i) => {
-    if (answers[i] === q.answer) {
-      score++;
+		
+      const choiceText = document.createTextNode(choice);
+      questionElement.appendChild(choiceElement);
+      questionElement.appendChild(choiceText);
     }
-  });
-
-  // Show and store score
-  const scoreText = `Your score is ${score} out of ${questions.length}.`;
-  scoreElement.textContent = scoreText;
-  localStorage.setItem("score", score);
-}
-
-// --- DISPLAY SAVED SCORE IF EXISTS ---
-
-function displaySavedScore() {
-  const stored = localStorage.getItem("score");
-  if (stored !== null) {
-    scoreElement.textContent = `Your score is ${stored} out of ${questions.length}.`;
+    questionsElement.appendChild(questionElement);
   }
+	
 }
-
-// --- EVENT LISTENERS ---
-
-submitButton.addEventListener("click", calculateScore);
-
-// --- INIT ---
 
 renderQuestions();
-displaySavedScore();
+
+const score = document.getElementById("score");
+const submit = document.getElementById("submit");
+submit.addEventListener('click', () => {
+	let count = 0;
+	for(let i = 0; i < questions.length; i++){
+		if(userAnswers[i] === questions[i].answer){
+			count++;
+		}
+	}
+
+	localStorage.setItem("score", count);
+
+	score.textContent = `Your score is ${count} out of 5.`;
+})
+
+
+const savedScore = localStorage.getItem("score");
+if (savedScore !== null) {
+	score.textContent = `Your score is ${savedScore} out of 5.`;
+}
